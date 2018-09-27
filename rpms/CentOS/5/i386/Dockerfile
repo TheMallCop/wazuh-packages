@@ -1,16 +1,19 @@
-FROM i386/centos:5.11
+FROM centos:5.11
 
 # Add the repositories
+# ADD packages.txt /packages.txt
+# RUN rpm -i $(cat packages.txt) --force
+RUN rm /etc/yum.repos.d/*
 COPY CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo
-RUN yum update -y && yum clean all
+RUN yum clean all && yum update -y && yum downgrade -y libselinux
 
 # Install sudo, SSH and compilers
 RUN yum install -y sudo ca-certificates openssh-server \
     make gcc curl openssh-clients initscripts tar \
-    rpm-build gnupg automake autoconf libtool wget
+    rpm-build gnupg automake autoconf libtool wget setarch checkpolicy
 
 RUN yum groupinstall -y "Development tools"
-RUN yum install -y  zlib-devel bzip2-devel openssl-devel ncurses-devel
+RUN yum install -y  zlib-devel bzip2-devel ncurses-devel
 # Install Perl 5.10
 RUN wget http://www.cpan.org/src/5.0/perl-5.10.1.tar.gz
 RUN gunzip perl-5.10.1.tar.gz
@@ -22,6 +25,7 @@ RUN make && make install
 RUN ln -fs /usr/local/bin/perl /bin/perl
 
 WORKDIR /
+RUN rm -rf perl*
 
 # Add the scripts to build the RPM package
 ADD build.sh /usr/local/bin/build_package
@@ -34,6 +38,10 @@ ADD wazuh.spec /build_wazuh/wazuh.spec
 # Add the volumes
 VOLUME /var/local/wazuh
 VOLUME /etc/wazuh
+ADD packages.txt /packages.txt
+RUN rpm -i $(cat packages.txt) --force
+ENV CC "gcc -m32"
+ENV OSSEC_CC "gcc -m32"
 
 # Set the entrypoint
 ENTRYPOINT ["/usr/local/bin/build_package"]
