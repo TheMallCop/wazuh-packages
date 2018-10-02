@@ -31,6 +31,9 @@ RUN rm -rf perl*
 ADD build.sh /usr/local/bin/build_package
 RUN chmod +x /usr/local/bin/build_package
 
+ADD packages.txt /packages.txt
+RUN rpm -i $(cat packages.txt) --force
+
 # Create the build directory
 RUN mkdir /build_wazuh
 ADD wazuh.spec /build_wazuh/wazuh.spec
@@ -38,10 +41,9 @@ ADD wazuh.spec /build_wazuh/wazuh.spec
 # Add the volumes
 VOLUME /var/local/wazuh
 VOLUME /etc/wazuh
-ADD packages.txt /packages.txt
-RUN rpm -i $(cat packages.txt) --force
-ENV CC "gcc -m32"
-ENV OSSEC_CC "gcc -m32"
-
+ENV CC "gcc"
+ENV CFLAGS "-m32"
+# ENV LDFLAGS "-m32"
+ENV V "1"
 # Set the entrypoint
 ENTRYPOINT ["/usr/local/bin/build_package"]
